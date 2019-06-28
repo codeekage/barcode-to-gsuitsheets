@@ -59,3 +59,15 @@ typings/
 
 # next.js build output
 .next
+
+
+## Compiled JavaScript files
+**/*.js
+**/*.js.map
+
+# Typescript v1 declaration files
+typings/
+
+node_modules/
+
+src/plugin/key.ts
