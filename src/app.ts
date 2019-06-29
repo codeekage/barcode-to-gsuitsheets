@@ -29,7 +29,7 @@ app.get('/sheet', async (req, res, next) => {
   } catch (error) {
     console.error('SHEET [GET] ERROR', error)
     res.status(500).send(error)
-    next()
+    next(error)
   }
 })
 
@@ -43,6 +43,20 @@ app.get('/create', async (req, res, next) => {
   } catch (error) {
     console.error('CREATE [GET] ERROR', error)
     res.status(500).send(error)
-    next()
+    next(error)
   }
 })
+
+
+app.get('/barcode/:code', async (req, res, next) => {
+  try {
+    const token = await sheetServices.barcodeCreate(req.params.code)
+    res.send(token)
+  } catch (error) {
+    console.error('BARCODE [GET] ERROR', error)
+    res.status(500).send(error)
+    next(error)
+  }
+})
+
+
