@@ -1,6 +1,7 @@
 import { google } from 'googleapis'
 import key from './key'
 import axios from 'axios'
+import BatchService from '../helper/firebase.query'
 
 export interface Result {
   success: boolean
@@ -41,7 +42,13 @@ export default class SheetServices {
       return Promise.reject({ success: false, error })
     }
   }
-  async createSheet(sheetTitle: string, userToken: string): Promise<Result> {
+  async createSheet(
+    sheetTitle: string,
+    userToken: string,
+    batchName: string,
+    barcodeKey: string,
+    spreadsheetId: string
+  ): Promise<Result> {
     try {
       const auth = this.OAuth()
       const token = await this.setToken(userToken)
@@ -56,23 +63,18 @@ export default class SheetServices {
         fields: 'spreadsheetId',
         auth,
       })
-
+      const xspreadsheetId = spreadsheetId || create['data']['spreadsheetId']
       const data: any[] = []
-      const barcodes = [
-        381371019410,
-        5000204689204,
-        9780140157376,
-        3185370000335,
-      ]
-
-
-      for (const codes of barcodes) {
-        data.push(await this.barcodeCreate(codes))
+      const batches = new BatchService()
+      const barcode = await batches.getBatch(batchName)
+      console.log('BARCODE CREATE LOGGER', barcode.data)
+      for (const codes of barcode.data.codes) {
+        data.push(await this.barcodeCreate(codes, barcodeKey))
       }
 
       const update = await sheet.spreadsheets.values.update({
-        range: 'Sheet1!A1:M10',
-        spreadsheetId: create['data']['spreadsheetId'],
+        range: 'Sheet1!A1:M100',
+        spreadsheetId: xspreadsheetId,
         requestBody: {
           values: [...data],
           majorDimension: 'ROWS',
@@ -86,12 +88,10 @@ export default class SheetServices {
     }
   }
 
-  async barcodeCreate(codes: number) {
+  async barcodeCreate(codes: number, apiKey: string) {
     try {
       const res = await axios.get(
-        `${
-          this.BARCODE_URL
-        }?barcode=${codes}&formatted=y&key=oiyzttv0a1o8lu2qtpsfp7n6yarmrh`
+        `${this.BARCODE_URL}?barcode=${codes}&formatted=y&key=${apiKey}`
       )
       const data = res.data.products[0]
       return await [

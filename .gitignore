@@ -9,4 +9,5 @@ node_modules/
 
 src/plugin/key.ts
 src/plugin/old-key
+src/keys.ts
 
