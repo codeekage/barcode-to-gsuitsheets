@@ -50,10 +50,20 @@ export default class SheetServices {
     spreadsheetId: string
   ): Promise<Result> {
     try {
+
       const auth = this.OAuth()
       const token = await this.setToken(userToken)
       auth.setCredentials(token['tokens'])
       const sheet = google.sheets({ version: 'v4', auth })
+
+      const data: any[] = []
+      const batches = new BatchService()
+      const barcode = await batches.getBatch(batchName)
+      console.log('BARCODE CREATE LOGGER', barcode.data)
+      for (const codes of barcode.data.codes) {
+        data.push(await this.barcodeCreate(codes, barcodeKey))
+      }
+
       const create = await sheet.spreadsheets.create({
         requestBody: {
           properties: {
@@ -64,14 +74,7 @@ export default class SheetServices {
         auth,
       })
       const xspreadsheetId = spreadsheetId || create['data']['spreadsheetId']
-      const data: any[] = []
-      const batches = new BatchService()
-      const barcode = await batches.getBatch(batchName)
-      console.log('BARCODE CREATE LOGGER', barcode.data)
-      for (const codes of barcode.data.codes) {
-        data.push(await this.barcodeCreate(codes, barcodeKey))
-      }
-
+    
       const update = await sheet.spreadsheets.values.update({
         range: 'Sheet1!A1:M100',
         spreadsheetId: xspreadsheetId,
@@ -89,10 +92,12 @@ export default class SheetServices {
   }
 
   async barcodeCreate(codes: number, apiKey: string) {
+    let statusCode: any
     try {
       const res = await axios.get(
         `${this.BARCODE_URL}?barcode=${codes}&formatted=y&key=${apiKey}`
       )
+      statusCode = res.status
       const data = res.data.products[0]
       return await [
         data['barcode_number'],
@@ -105,7 +110,8 @@ export default class SheetServices {
         data['price'],
       ]
     } catch (error) {
-      console.error('Create SpreadSheet Error', error)
+      console.error('Barcode Request API', error)
+      console.log('Status Code', statusCode)
       return error
     }
   }
